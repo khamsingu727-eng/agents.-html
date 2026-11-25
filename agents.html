@@ -1,0 +1,1730 @@
+
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ລະບົບຫຼັງບ້ານ — ສະສົມຄະແນນ & ຕົວແທນຈຳໜ່າຍ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Lao:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans Lao"', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans Lao', 'Plus Jakarta Sans', system-ui, sans-serif;
+      background-color: #f6f7f9;
+      color: #0f172a;
+      overflow-x: hidden;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .surface-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.08);
+    }
+
+    .surface-muted {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .toast-anim {
+      animation: slideUp 0.2s ease-out forwards;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f6f7f9] text-slate-900 antialiased">
+
+  <!-- Toast Notifications -->
+  <div id="toastStack" class="fixed bottom-4 right-4 z-[80] flex flex-col gap-2 max-w-[92vw] sm:max-w-sm pointer-events-none"></div>
+
+  <!-- Confirm Modal -->
+  <div id="confirmDialog" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4" role="dialog" aria-modal="true">
+    <div class="surface-card w-full max-w-md rounded-2xl p-6 space-y-5">
+      <div class="flex items-start gap-3.5">
+        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold shrink-0">!</div>
+        <div>
+          <h3 id="confirmDialogTitle" class="text-base font-extrabold text-slate-900">ຢືນຢັນການດຳເນີນການ</h3>
+          <p id="confirmDialogBody" class="mt-1 text-sm text-slate-600 leading-relaxed"></p>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2.5">
+        <button id="confirmCancel" type="button" class="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer">
+          ຍົກເລີກ
+        </button>
+        <button id="confirmOk" type="button" class="px-4 py-2 rounded-xl text-sm font-bold bg-rose-600 hover:bg-rose-700 text-white transition cursor-pointer">
+          ຢືນຢັນ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Adjust / Deduct Points Modal -->
+  <div id="adjustModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4" role="dialog" aria-modal="true">
+    <div class="surface-card w-full max-w-lg rounded-2xl p-6 space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3.5">
+        <div>
+          <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-200 mb-1">
+            ທ້ອນ / ຫັກ / ປັບຄະແນນ
+          </span>
+          <h3 id="adjustModalTitle" class="text-lg font-extrabold text-slate-900">ປັບຄະແນນລູກຄ້າ</h3>
+        </div>
+        <button id="closeAdjustModal" type="button" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center transition cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <div id="adjustCustomerInfo" class="p-3.5 rounded-xl surface-muted text-xs text-slate-700 tabular-nums"></div>
+
+      <form id="adjustForm" class="space-y-4">
+        <input type="hidden" id="adjustCustomerId" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label for="adjustCategory" class="block text-xs font-bold text-slate-700 mb-1.5">ໝວດຄະແນນ</label>
+            <select id="adjustCategory" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm font-medium text-slate-900">
+              <option value="TOTAL">ຍອດລວມທັງໝົດ</option>
+              <option value="LAK9">ຄະແນນເຕີມບັດ: ຫຼັກ 9</option>
+              <option value="LAK5">ຄະແນນເຕີມບັດ: ຫຼັກ 5</option>
+              <option value="LOTTERY">ຄະແນນຊື້ເລກ</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="adjustMode" class="block text-xs font-bold text-slate-700 mb-1.5">ການດຳເນີນການ</label>
+            <select id="adjustMode" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm font-medium text-slate-900">
+              <option value="DEDUCT">- ຫັກ / ທ້ອນຄະແນນອອກ</option>
+              <option value="ADD">+ ເພີ່ມຄະແນນເຂົ້າ</option>
+              <option value="SET">= ກຳນົດຄະແນນໃໝ່</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="adjustAmount" class="block text-xs font-bold text-slate-700 mb-1.5">ຈຳນວນຄະແນນ <span class="text-rose-600">*</span></label>
+          <input id="adjustAmount" type="number" min="0" step="1" required placeholder="ເຊັ່ນ: 500"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-base font-extrabold text-slate-900 tabular-nums" />
+          <div id="adjustResultPreview" class="mt-2 text-xs font-bold text-teal-700 tabular-nums"></div>
+        </div>
+
+        <div>
+          <label for="adjustNote" class="block text-xs font-bold text-slate-700 mb-1.5">ໝາຍເຫດ (ເຊັ່ນ: ລູກຄ້າທ້ອນຄະແນນ)</label>
+          <input id="adjustNote" type="text" placeholder="ລະບຸເຫດຜົນການທ້ອນ ຫຼື ປັບຄະແນນ..."
+            class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm text-slate-900" />
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+          <button id="cancelAdjustModal" type="button" class="px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer">
+            ຍົກເລີກ
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-bold bg-teal-700 hover:bg-teal-800 text-white transition cursor-pointer">
+            ບັນທຶກການປັບ
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Customer History Modal -->
+  <div id="historyModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4" role="dialog" aria-modal="true">
+    <div class="surface-card w-full max-w-2xl rounded-2xl p-6 space-y-4 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3.5 shrink-0">
+        <div>
+          <h3 id="historyTitle" class="text-lg font-extrabold text-slate-900">ປະຫວັດລູກຄ້າ</h3>
+          <p id="historySubtitle" class="text-xs text-slate-500 mt-0.5 tabular-nums"></p>
+        </div>
+        <button id="closeHistoryModal" type="button" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center transition cursor-pointer">
+          ✕
+        </button>
+      </div>
+      <div id="historyBody" class="overflow-y-auto space-y-2.5 pr-1 flex-1"></div>
+    </div>
+  </div>
+
+  <!-- Top Navigation Bar (Clean Modern Studio Header) -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm shrink-0">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l2.6 5.3L20.5 9l-4.2 4.1 1 5.8L12 16.1 6.7 18.9l1-5.8L3.5 9l5.9-.7L12 3z"/>
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight truncate">ລະບົບຫຼັງບ້ານ</div>
+          <div id="headerRuleBadge" class="text-[11px] font-semibold text-teal-700 truncate tabular-nums">ບັດ: 10,000=500 · ເລກ: 100,000=2,000 (2%)</div>
+        </div>
+      </div>
+
+      <!-- Desktop Tab Pills -->
+      <nav class="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-xl" aria-label="Primary Tabs">
+        <button data-tab="overview" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">ພາບລວມ</button>
+        <button data-tab="record-buy" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">ບັນທຶກຊື້ & ບວກຄະແນນ</button>
+        <button data-tab="customers" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">ສະສົມຄະແນນລູກຄ້າ</button>
+        <button data-tab="agents" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">ໂຕແທນຈຳໜ່າຍ</button>
+        <button data-tab="config" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">ຕັ້ງຄ່າ</button>
+      </nav>
+
+      <!-- Right Action -->
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="demoLoadTopBtn" type="button" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer">
+          <span>🔄</span>
+          <span>ຂໍ້ມູນຕົວຢ່າງ</span>
+        </button>
+        <button id="mobileMenuBtn" type="button" class="md:hidden px-3 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white cursor-pointer">
+          ☰ ເມນູ
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Menu -->
+    <div id="mobileMenu" class="hidden md:hidden border-t border-slate-200 bg-white px-4 py-2.5 space-y-1">
+      <button data-tab="overview" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-bold transition cursor-pointer">ພາບລວມ</button>
+      <button data-tab="record-buy" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-bold transition cursor-pointer">ບັນທຶກຊື້ & ບວກຄະແນນ</button>
+      <button data-tab="customers" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-bold transition cursor-pointer">ສະສົມຄະແນນລູກຄ້າ</button>
+      <button data-tab="agents" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-bold transition cursor-pointer">ໂຕແທນຈຳໜ່າຍ</button>
+      <button data-tab="config" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-bold transition cursor-pointer">ຕັ້ງຄ່າ</button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+    <!-- Top Summary Metrics -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 tabular-nums">
+      <div class="surface-card rounded-2xl p-4 sm:p-5">
+        <div class="text-xs font-semibold text-slate-500">ລູກຄ້າທັງໝົດ</div>
+        <div id="statCustomers" class="mt-1.5 text-2xl font-extrabold text-slate-900">0 ຄົນ</div>
+        <div id="statSalesTotal" class="mt-1 text-xs font-semibold text-teal-700">ຍອດຊື້ 0 ກີບ</div>
+      </div>
+
+      <div class="surface-card rounded-2xl p-4 sm:p-5">
+        <div class="text-xs font-semibold text-slate-500">ຄະແນນຄົງເຫຼືອລວມ</div>
+        <div id="statActivePoints" class="mt-1.5 text-2xl font-extrabold text-teal-700">0</div>
+        <div id="statLifetimePoints" class="mt-1 text-xs text-slate-500">ສະສົມທັງໝົດ 0</div>
+      </div>
+
+      <div class="surface-card rounded-2xl p-4 sm:p-5">
+        <div class="text-xs font-semibold text-slate-500">ລາຍການບັນທຶກ</div>
+        <div id="statTxCount" class="mt-1.5 text-2xl font-extrabold text-slate-900">0</div>
+        <div class="mt-1 text-xs text-slate-500">ຫຼັກ 9 · ຫຼັກ 5 · ຊື້ເລກ</div>
+      </div>
+
+      <div class="surface-card rounded-2xl p-4 sm:p-5">
+        <div class="text-xs font-semibold text-slate-500">ໂຕແທນຈຳໜ່າຍ</div>
+        <div id="statAgentsCount" class="mt-1.5 text-2xl font-extrabold text-slate-900">0 ໂຕແທນ</div>
+        <div id="statAgentsDue" class="mt-1 text-xs text-slate-600">ຄ້າງ 0 · ຄ່າ% ຄ້າງ 0</div>
+      </div>
+    </section>
+
+    <!-- TAB 1: OVERVIEW -->
+    <section id="tab-overview" class="tab-panel space-y-6">
+      <div class="surface-card rounded-2xl p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-lg sm:text-xl font-extrabold text-slate-900">ສະຫຼຸບຄະແນນແຕ່ລະໝວດ & ຄວາມເຄື່ອນໄຫວ</h1>
+          <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+            ບວກຄະແນນສະສົມອັດຕະໂນມັດເມື່ອຊື່ດຽວກັນ ຫຼື ເບີດຽວກັນ · ທ້ອນ/ປັບຄະແນນໄດ້ · ຈັດການໂຕແທນ 2 ແບບ
+          </p>
+        </div>
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <button onclick="switchTab('record-buy')" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-teal-700 hover:bg-teal-800 text-white transition cursor-pointer">
+            + ບັນທຶກການຊື້ໃໝ່
+          </button>
+          <button onclick="switchTab('customers')" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 transition cursor-pointer">
+            ສະສົມຄະແນນລູກຄ້າ
+          </button>
+          <button onclick="switchTab('agents')" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 transition cursor-pointer">
+            ໂຕແທນຈຳໜ່າຍ
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 tabular-nums">
+        <div class="surface-card rounded-2xl p-5 border-t-4 border-t-teal-600">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold text-teal-800">ຄະແນນເຕີມບັດ: ຫຼັກ 9</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700">LAK 9</span>
+          </div>
+          <div id="ovPts9" class="mt-2.5 text-2xl font-extrabold text-slate-900">0</div>
+          <div id="ovSales9" class="mt-1 text-xs text-slate-500">ຍອດຊື້ 0 ກີບ</div>
+        </div>
+
+        <div class="surface-card rounded-2xl p-5 border-t-4 border-t-sky-600">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold text-sky-800">ຄະແນນເຕີມບັດ: ຫຼັກ 5</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700">LAK 5</span>
+          </div>
+          <div id="ovPts5" class="mt-2.5 text-2xl font-extrabold text-slate-900">0</div>
+          <div id="ovSales5" class="mt-1 text-xs text-slate-500">ຍອດຊື້ 0 ກີບ</div>
+        </div>
+
+        <div class="surface-card rounded-2xl p-5 border-t-4 border-t-amber-500">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold text-amber-800">ຄະແນນຊື້ເລກ</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700">LOTTERY</span>
+          </div>
+          <div id="ovPtsLot" class="mt-2.5 text-2xl font-extrabold text-slate-900">0</div>
+          <div id="ovSalesLot" class="mt-1 text-xs text-slate-500">ຍອດຊື້ 0 ກີບ</div>
+        </div>
+      </div>
+
+      <div class="surface-card rounded-2xl p-5 sm:p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-extrabold text-slate-900">ລາຍການຫຼ້າສຸດ</h2>
+          <button onclick="switchTab('customers')" class="text-xs font-bold text-teal-700 hover:underline cursor-pointer">
+            ເບິ່ງລູກຄ້າທັງໝົດ →
+          </button>
+        </div>
+        <div id="ovRecentList" class="space-y-2.5"></div>
+      </div>
+    </section>
+
+    <!-- TAB 2: RECORD BUY & AUTO ACCUMULATE -->
+    <section id="tab-record-buy" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="lg:col-span-7 surface-card rounded-2xl p-5 sm:p-6 space-y-4">
+          <div class="border-b border-slate-200 pb-3.5">
+            <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-200 mb-1">
+              ຊື່ດຽວກັນ ຫຼື ເບີດຽວກັນ · ບວກຄະແນນສະສົມຕໍ່ເນື່ອງ
+            </span>
+            <h2 class="text-lg font-extrabold text-slate-900">ບັນທຶກການຊື້ & ຄິດໄລ່ຄະແນນ</h2>
+          </div>
+
+          <form id="buyForm" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label for="buyName" class="block text-xs font-bold text-slate-700 mb-1.5">ຊື່ລູກຄ້າ</label>
+                <input id="buyName" list="dlNames" type="text" placeholder="ເຊັ່ນ: ສົມໃຈ"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm text-slate-900" />
+                <datalist id="dlNames"></datalist>
+              </div>
+
+              <div>
+                <label for="buyPhone" class="block text-xs font-bold text-slate-700 mb-1.5">ເບີໂທລູກຄ້າ</label>
+                <input id="buyPhone" list="dlPhones" type="tel" placeholder="ເຊັ່ນ: 020 5555 1111"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm text-slate-900 tabular-nums" />
+                <datalist id="dlPhones"></datalist>
+              </div>
+            </div>
+
+            <div id="buyMatchBanner" class="p-3.5 rounded-xl surface-muted text-xs text-slate-700 leading-relaxed">
+              ປ້ອນ <strong>ຊື່ລູກຄ້າ</strong> ຫຼື <strong>ເບີໂທ</strong> — ຖ້າກົງກັບ <strong>ຊື່ດຽວກັນ ຫຼື ເບີດຽວກັນ</strong> ລະບົບຈະບວກຄະແນນສະສົມໄປເລືອຍໆ.
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">ໝວດການຊື້</label>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <label class="cursor-pointer">
+                  <input type="radio" name="buyCat" value="LAK9" checked class="peer sr-only">
+                  <div class="p-3 rounded-xl text-center text-xs font-bold border border-slate-200 bg-slate-50 text-slate-700 peer-checked:bg-teal-700 peer-checked:border-teal-700 peer-checked:text-white transition">
+                    ເຕີມບັດ: ຫຼັກ 9
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="buyCat" value="LAK5" class="peer sr-only">
+                  <div class="p-3 rounded-xl text-center text-xs font-bold border border-slate-200 bg-slate-50 text-slate-700 peer-checked:bg-sky-700 peer-checked:border-sky-700 peer-checked:text-white transition">
+                    ເຕີມບັດ: ຫຼັກ 5
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="buyCat" value="LOTTERY" class="peer sr-only">
+                  <div class="p-3 rounded-xl text-center text-xs font-bold border border-slate-200 bg-slate-50 text-slate-700 peer-checked:bg-amber-600 peer-checked:border-amber-600 peer-checked:text-white transition">
+                    ຊື້ເລກ
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 tabular-nums">
+              <div>
+                <label for="buyAmount" class="block text-xs font-bold text-slate-700 mb-1.5">ຈຳນວນເງິນ (ກີບ) <span class="text-rose-600">*</span></label>
+                <input id="buyAmount" type="number" min="0" step="100" required value="10000"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm font-bold text-slate-900" />
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label for="buyPoints" class="text-xs font-bold text-slate-700">ຄະແນນທີ່ໄດ້ຮັບ</label>
+                  <label class="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 cursor-pointer">
+                    <input id="buyManualToggle" type="checkbox" class="rounded border-slate-400">
+                    <span>ປັບເອງ</span>
+                  </label>
+                </div>
+                <input id="buyPoints" type="number" step="1" required readonly
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-teal-50 border border-teal-200 text-base font-extrabold text-teal-800 outline-none" />
+              </div>
+            </div>
+
+            <div>
+              <label for="buyNote" class="block text-xs font-bold text-slate-700 mb-1.5">ໝາຍເຫດ</label>
+              <input id="buyNote" type="text" placeholder="ເຊັ່ນ: ຊື້ເທື່ອ 1 / ຊື້ເທື່ອ 2 / ເລກທີ່ຊື້..."
+                class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm text-slate-900" />
+            </div>
+
+            <button type="submit" class="w-full py-3 px-4 rounded-xl text-sm font-bold bg-teal-700 hover:bg-teal-800 text-white transition cursor-pointer">
+              ບັນທຶກ & ບວກຄະແນນສະສົມ
+            </button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-5 surface-card rounded-2xl p-5 sm:p-6 space-y-4">
+          <h3 class="text-base font-extrabold text-slate-900">ຕົວຢ່າງການເຮັດວຽກ</h3>
+          <div class="space-y-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
+            <div class="p-3.5 rounded-xl surface-muted">
+              <div class="font-bold text-slate-900 mb-1">ບວກຄະແນນຕໍ່ເນື່ອງ (ຊື່ດຽວກັນ ຫຼື ເບີດຽວກັນ)</div>
+              ຊື້ເທື່ອທຳອິດ 10,000 ກີບ ໄດ້ 500 ຄະແນນ · ຊື້ເທື່ອ 2 ອີກ 10,000 ກີບ ໄດ້ອີກ 500 ຄະແນນ → ບວກລວມເປັນ <strong class="text-teal-700">1,000 ຄະແນນ</strong>.
+            </div>
+            <div class="p-3.5 rounded-xl surface-muted">
+              <div class="font-bold text-slate-900 mb-1">ເກນຊື້ເລກ</div>
+              ຄ່າເລີ່ມຕົ້ນ <strong class="text-amber-700">100,000 ກີບ = 2,000 ຄະແນນ (2%)</strong> ແລະ ປັບເອງໄດ້ໃນໜ້າຕັ້ງຄ່າ.
+            </div>
+            <div class="p-3.5 rounded-xl surface-muted">
+              <div class="font-bold text-slate-900 mb-1">ເວລາລູກຄ້າທ້ອນຄະແນນ</div>
+              ໄປທີ່ໜ້າ <strong>ສະສົມຄະແນນລູກຄ້າ</strong> ແລ້ວກົດ <strong>ທ້ອນ/ຫັກ</strong> ຫຼື <strong>ປັບຄະແນນ</strong>.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: CUSTOMER POINTS HUB -->
+    <section id="tab-customers" class="tab-panel hidden space-y-6">
+      <div class="surface-card rounded-2xl p-5 sm:p-6 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">ສະສົມຄະແນນລູກຄ້າ</h2>
+            <p class="text-xs text-slate-500">ຄະແນນເຕີມບັດ: ຫຼັກ 9, ຫຼັກ 5 · ຄະແນນຊື້ເລກ · ປັບຄະແນນ & ທ້ອນຄະແນນ</p>
+          </div>
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <input id="custSearch" type="text" placeholder="ຄົ້ນຫາຊື່ ຫຼື ເບີໂທ..."
+              class="px-3.5 py-2 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm text-slate-900" />
+            <select id="custFilter" class="px-3.5 py-2 rounded-xl bg-white border border-slate-300 outline-none text-sm text-slate-900">
+              <option value="ALL">ທຸກໝວດ</option>
+              <option value="LAK9">ຫຼັກ 9</option>
+              <option value="LAK5">ຫຼັກ 5</option>
+              <option value="LOTTERY">ຊື້ເລກ</option>
+            </select>
+            <button onclick="switchTab('record-buy')" class="px-4 py-2 rounded-xl text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white transition cursor-pointer shrink-0">
+              + ເພີ່ມຄະແນນ
+            </button>
+          </div>
+        </div>
+
+        <div id="customerCards" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 tabular-nums"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: AGENTS / RESELLERS -->
+    <section id="tab-agents" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="surface-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-slate-900">
+          <div class="text-xs font-extrabold text-slate-900">ແບບ 1: ເອົາໄປຂາຍລະຈ່າຍເງິນ</div>
+          <p class="mt-1 text-xs text-slate-600">ບັນທຶກຍອດທີ່ໂຕແທນເອົາໄປຂາຍ, ຍອດທີ່ຈ່າຍເງິນຄືນ ແລະ ຍອດຄ້າງຊຳລະ.</p>
+        </div>
+        <div class="surface-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-teal-700">
+          <div class="text-xs font-extrabold text-teal-800">ແບບ 2: ຮັບອໍເດີລະເອົາ %</div>
+          <p class="mt-1 text-xs text-slate-600">ໂຕແທນຮັບອໍເດີແລ້ວໄດ້ຄ່າ % ຕາມທີ່ກຳນົດ (ປັບ % ໄດ້ຕາມໃຈທຸກເວລາ).</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="lg:col-span-5 surface-card rounded-2xl p-5 sm:p-6 space-y-4">
+          <h3 class="text-base font-extrabold text-slate-900 border-b border-slate-200 pb-3">ເພີ່ມໂຕແທນຈຳໜ່າຍ</h3>
+          <form id="agentCreateForm" class="space-y-3.5">
+            <div>
+              <label for="agName" class="block text-xs font-bold text-slate-700 mb-1.5">ຊື່ໂຕແທນ <span class="text-rose-600">*</span></label>
+              <input id="agName" type="text" required placeholder="ເຊັ່ນ: ໂຕແທນ ອານັນ"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm text-slate-900" />
+            </div>
+
+            <div>
+              <label for="agPhone" class="block text-xs font-bold text-slate-700 mb-1.5">ເບີໂທ</label>
+              <input id="agPhone" type="text" placeholder="020 5xxx xxxx"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm text-slate-900 tabular-nums" />
+            </div>
+
+            <div>
+              <label for="agType" class="block text-xs font-bold text-slate-700 mb-1.5">ຮູບແບບໂຕແທນ</label>
+              <select id="agType" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm text-slate-900">
+                <option value="CASH_SELL">ແບບ 1: ເອົາໄປຂາຍລະຈ່າຍເງິນ</option>
+                <option value="ORDER_PCT">ແບບ 2: ຮັບອໍເດີລະເອົາ %</option>
+              </select>
+            </div>
+
+            <div id="agPctField" class="hidden">
+              <label for="agPct" class="block text-xs font-bold text-teal-800 mb-1.5">ອັດຕາ % (ປັບໄດ້ຕາມໃຈ)</label>
+              <input id="agPct" type="number" min="0" max="100" step="0.5" value="10"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-teal-50 border border-teal-300 focus:border-teal-700 outline-none text-sm font-extrabold text-teal-900 tabular-nums" />
+            </div>
+
+            <button type="submit" class="w-full py-2.5 px-4 rounded-xl text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white transition cursor-pointer">
+              ບັນທຶກໂຕແທນ
+            </button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-7 surface-card rounded-2xl p-5 sm:p-6 space-y-4">
+          <h3 class="text-base font-extrabold text-slate-900 border-b border-slate-200 pb-3">ບັນທຶກລາຍການໂຕແທນ</h3>
+          <form id="agentTxForm" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label for="txAgentSelect" class="block text-xs font-bold text-slate-700 mb-1.5">ເລືອກໂຕແທນ <span class="text-rose-600">*</span></label>
+                <select id="txAgentSelect" required class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm text-slate-900"></select>
+              </div>
+              <div>
+                <label for="txAgentAction" class="block text-xs font-bold text-slate-700 mb-1.5">ລາຍການ</label>
+                <select id="txAgentAction" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm text-slate-900"></select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 tabular-nums">
+              <div>
+                <label id="txAgentAmtLabel" for="txAgentAmt" class="block text-xs font-bold text-slate-700 mb-1.5">ຈຳນວນເງິນ (ກີບ) <span class="text-rose-600">*</span></label>
+                <input id="txAgentAmt" type="number" min="100" step="100" required value="100000"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm font-bold text-slate-900" />
+              </div>
+
+              <div id="txOrderPctBox" class="hidden">
+                <label for="txOrderPct" class="block text-xs font-bold text-teal-800 mb-1.5">% ອໍເດີນີ້</label>
+                <input id="txOrderPct" type="number" min="0" max="100" step="0.5" value="10"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-teal-50 border border-teal-300 outline-none text-sm font-extrabold text-teal-900" />
+              </div>
+
+              <div id="txCommPreviewBox" class="hidden">
+                <span class="block text-xs font-bold text-slate-500 mb-1.5">ຄ່າ % ທີ່ໄດ້</span>
+                <div id="txCommPreview" class="px-3.5 py-2.5 rounded-xl bg-slate-100 text-sm font-extrabold text-teal-800">0 ກີບ</div>
+              </div>
+            </div>
+
+            <div>
+              <label for="txAgentNote" class="block text-xs font-bold text-slate-700 mb-1.5">ໝາຍເຫດ</label>
+              <input id="txAgentNote" type="text" placeholder="ລາຍລະອຽດ..."
+                class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 outline-none text-sm text-slate-900" />
+            </div>
+
+            <button type="submit" class="w-full py-3 px-4 rounded-xl text-sm font-bold bg-teal-700 hover:bg-teal-800 text-white transition cursor-pointer">
+              ບັນທຶກລາຍການໂຕແທນ
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="surface-card rounded-2xl p-5 sm:p-6 space-y-4 tabular-nums">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h3 class="text-base font-extrabold text-slate-900">ລາຍຊື່ໂຕແທນ</h3>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button data-agfilter="ALL" class="agfilter-btn px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer">ທັງໝົດ</button>
+            <button data-agfilter="CASH_SELL" class="agfilter-btn px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer">ແບບ 1: ຂາຍລະຈ່າຍເງິນ</button>
+            <button data-agfilter="ORDER_PCT" class="agfilter-btn px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer">ແບບ 2: ຮັບອໍເດີລະເອົາ %</button>
+          </div>
+        </div>
+        <div id="agentCards" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      </div>
+    </section>
+
+    <!-- TAB 5: CONFIG & BACKUP -->
+    <section id="tab-config" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="surface-card rounded-2xl p-5 sm:p-6 space-y-4">
+          <h2 class="text-base font-extrabold text-slate-900 border-b border-slate-200 pb-3">ຕັ້ງຄ່າເກນຄະແນນ</h2>
+          <form id="configRuleForm" class="space-y-4 tabular-nums">
+            <div class="p-3.5 rounded-xl surface-muted space-y-3">
+              <div class="text-xs font-extrabold text-slate-800">ເຕີມບັດ (ຫຼັກ 9 & ຫຼັກ 5)</div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label for="cfgCardAmt" class="block text-xs font-semibold text-slate-600 mb-1">ທຸກໆ (ກີບ)</label>
+                  <input id="cfgCardAmt" type="number" min="100" step="100" required
+                    class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-sm font-bold text-slate-900" />
+                </div>
+                <div>
+                  <label for="cfgCardPts" class="block text-xs font-semibold text-slate-600 mb-1">ໄດ້ຄະແນນ</label>
+                  <input id="cfgCardPts" type="number" min="1" step="1" required
+                    class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-sm font-bold text-teal-800" />
+                </div>
+              </div>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 space-y-3">
+              <div class="text-xs font-extrabold text-amber-900">ຊື້ເລກ (100,000 ກີບ = 2,000 ຫຼື 2%)</div>
+              <div class="grid grid-cols-3 gap-2.5">
+                <div>
+                  <label for="cfgLotAmt" class="block text-xs font-semibold text-slate-600 mb-1">ທຸກໆ (ກີບ)</label>
+                  <input id="cfgLotAmt" type="number" min="100" step="100" required
+                    class="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-sm font-bold text-slate-900" />
+                </div>
+                <div>
+                  <label for="cfgLotPts" class="block text-xs font-semibold text-slate-600 mb-1">ໄດ້ຄະແນນ</label>
+                  <input id="cfgLotPts" type="number" min="1" step="1" required
+                    class="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-sm font-bold text-amber-800" />
+                </div>
+                <div>
+                  <label for="cfgLotPct" class="block text-xs font-semibold text-slate-600 mb-1">ຫຼື (%)</label>
+                  <input id="cfgLotPct" type="number" min="0" max="100" step="0.1" required
+                    class="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-sm font-bold text-slate-900" />
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 px-4 rounded-xl text-sm font-bold bg-teal-700 hover:bg-teal-800 text-white transition cursor-pointer">
+              ບັນທຶກການຕັ້ງຄ່າ
+            </button>
+          </form>
+        </div>
+
+        <div class="surface-card rounded-2xl p-5 sm:p-6 space-y-4">
+          <h2 class="text-base font-extrabold text-slate-900 border-b border-slate-200 pb-3">ສຳຮອງຂໍ້ມູນ & ຣີເຊັດ</h2>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            ບັນທຶກອັດຕະໂນມັດໃນເຄື່ອງ (localStorage). ສາມາດ Export ເປັນ JSON ຫຼື Import ກັບຄືນໄດ້.
+          </p>
+          <button id="exportJsonBtn" type="button" class="w-full py-2.5 px-4 rounded-xl text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white transition cursor-pointer">
+            ດາວໂຫຼດໄຟລ໌ສຳຮອງ (JSON)
+          </button>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">ນຳເຂົ້າໄຟລ໌ JSON</label>
+            <input id="importJsonInput" type="file" accept=".json,application/json"
+              class="block w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer" />
+          </div>
+          <div class="pt-3 border-t border-slate-200 flex flex-col sm:flex-row gap-2.5">
+            <button id="resetDemoBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition cursor-pointer">
+              ໂຫຼດຂໍ້ມູນຕົວຢ່າງ
+            </button>
+            <button id="wipeAllBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition cursor-pointer">
+              ລຶບຂໍ້ມູນທັງໝົດ
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const STORE_KEY = 'backoffice_studio_v3';
+
+    let appState = {
+      rules: {
+        cardAmount: 10000,
+        cardPoints: 500,
+        lotAmount: 100000,
+        lotPoints: 2000,
+        lotPct: 2
+      },
+      customers: [],
+      transactions: [],
+      agents: [],
+      agentLogs: []
+    };
+
+    let activeTab = 'overview';
+    let selectedAgFilter = 'ALL';
+    let confirmAction = null;
+
+    // ==================== Formatting & Helpers ====================
+    function fmtNum(v) {
+      return (Number(v) || 0).toLocaleString('en-US');
+    }
+
+    function fmtKip(v) {
+      return `${fmtNum(v)} ກີບ`;
+    }
+
+    function fmtDate(iso) {
+      try {
+        return new Date(iso).toLocaleString('lo-LA', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch {
+        return iso || '';
+      }
+    }
+
+    function makeId(prefix) {
+      return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    }
+
+    function esc(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function normStr(s) {
+      return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function normTel(p) {
+      return String(p || '').replace(/\D+/g, '').trim();
+    }
+
+    function catLabel(cat) {
+      if (cat === 'LAK5') return 'ຄະແນນເຕີມບັດ: ຫຼັກ 5';
+      if (cat === 'LOTTERY') return 'ຄະແນນຊື້ເລກ';
+      return 'ຄະແນນເຕີມບັດ: ຫຼັກ 9';
+    }
+
+    function syncCustomerTotals(c) {
+      c.pts9 = Math.max(0, Number(c.pts9) || 0);
+      c.pts5 = Math.max(0, Number(c.pts5) || 0);
+      c.ptsLot = Math.max(0, Number(c.ptsLot) || 0);
+      c.points = c.pts9 + c.pts5 + c.ptsLot;
+      c.lifetimePoints = Math.max(Number(c.points) || 0, Number(c.lifetimePoints) || 0);
+      c.totalSpent = Math.max(0, Number(c.totalSpent) || 0);
+      c.txCount = Math.max(0, Number(c.txCount) || 0);
+    }
+
+    function addPtsToCat(c, cat, delta) {
+      const d = Number(delta) || 0;
+      if (cat === 'LAK5') c.pts5 = Math.max(0, (Number(c.pts5) || 0) + d);
+      else if (cat === 'LOTTERY') c.ptsLot = Math.max(0, (Number(c.ptsLot) || 0) + d);
+      else c.pts9 = Math.max(0, (Number(c.pts9) || 0) + d);
+      if (d > 0) c.lifetimePoints = (Number(c.lifetimePoints) || 0) + d;
+      syncCustomerTotals(c);
+    }
+
+    // ==================== Toast & Confirm ====================
+    function notify(msg, tone = 'ok') {
+      const stack = document.getElementById('toastStack');
+      const div = document.createElement('div');
+      const cls = tone === 'err'
+        ? 'bg-rose-900 text-white border-rose-700'
+        : tone === 'info'
+        ? 'bg-slate-900 text-white border-slate-700'
+        : 'bg-teal-900 text-white border-teal-700';
+      div.className = `toast-anim pointer-events-auto px-4 py-3 rounded-xl border text-xs sm:text-sm font-bold shadow-lg ${cls}`;
+      div.textContent = msg;
+      stack.appendChild(div);
+      setTimeout(() => {
+        div.style.opacity = '0';
+        div.style.transition = 'opacity 0.2s ease';
+        setTimeout(() => div.remove(), 200);
+      }, 3000);
+    }
+
+    function askConfirm(title, body, cb) {
+      confirmAction = cb;
+      document.getElementById('confirmDialogTitle').textContent = title;
+      document.getElementById('confirmDialogBody').textContent = body;
+      const dlg = document.getElementById('confirmDialog');
+      dlg.classList.remove('hidden');
+      dlg.classList.add('flex');
+    }
+
+    function hideConfirm() {
+      confirmAction = null;
+      const dlg = document.getElementById('confirmDialog');
+      dlg.classList.add('hidden');
+      dlg.classList.remove('flex');
+    }
+
+    // ==================== Seed & Storage ====================
+    function seedData() {
+      const now = Date.now();
+      const t = (m) => new Date(now - m * 60000).toISOString();
+      return {
+        rules: {
+          cardAmount: 10000,
+          cardPoints: 500,
+          lotAmount: 100000,
+          lotPoints: 2000,
+          lotPct: 2
+        },
+        customers: [
+          {
+            id: 'cust_1',
+            name: 'ສົມໃຈ',
+            phone: '020 5555 1111',
+            pts9: 1000,
+            pts5: 500,
+            ptsLot: 0,
+            points: 1500,
+            lifetimePoints: 1500,
+            totalSpent: 30000,
+            txCount: 3,
+            updatedAt: t(10)
+          },
+          {
+            id: 'cust_2',
+            name: 'ນາງ ມາລີ',
+            phone: '020 7777 2222',
+            pts9: 0,
+            pts5: 500,
+            ptsLot: 2000,
+            points: 2500,
+            lifetimePoints: 3000,
+            totalSpent: 110000,
+            txCount: 2,
+            updatedAt: t(35)
+          }
+        ],
+        transactions: [
+          {
+            id: 't_1',
+            customerId: 'cust_1',
+            customerName: 'ສົມໃຈ',
+            customerPhone: '020 5555 1111',
+            type: 'EARN',
+            category: 'LAK9',
+            amount: 10000,
+            pointsDelta: 500,
+            note: 'ຊື້ເທື່ອທຳອິດ 10,000 ກີບ ໄດ້ 500 ຄະແນນ',
+            createdAt: t(25)
+          },
+          {
+            id: 't_2',
+            customerId: 'cust_1',
+            customerName: 'ສົມໃຈ',
+            customerPhone: '020 5555 1111',
+            type: 'EARN',
+            category: 'LAK9',
+            amount: 10000,
+            pointsDelta: 500,
+            note: 'ຊື້ເທື່ອ 2 ອີກ 10,000 ກີບ ບວກເຂົ້າກັນເປັນ 1,000',
+            createdAt: t(10)
+          }
+        ],
+        agents: [
+          {
+            id: 'ag_1',
+            name: 'ໂຕແທນ ອານັນ',
+            phone: '020 5511 2233',
+            type: 'CASH_SELL',
+            pctRate: 0,
+            stockTaken: 250000,
+            cashPaid: 150000,
+            orderTotal: 0,
+            commissionEarned: 0,
+            commissionPaid: 0,
+            createdAt: t(90)
+          },
+          {
+            id: 'ag_2',
+            name: 'ໂຕແທນ ນ້ອຍ',
+            phone: '020 9988 7766',
+            type: 'ORDER_PCT',
+            pctRate: 10,
+            stockTaken: 0,
+            cashPaid: 0,
+            orderTotal: 200000,
+            commissionEarned: 20000,
+            commissionPaid: 5000,
+            createdAt: t(70)
+          }
+        ],
+        agentLogs: []
+      };
+    }
+
+    function persist() {
+      try {
+        localStorage.setItem(STORE_KEY, JSON.stringify(appState));
+      } catch {
+        notify('ບໍ່ສາມາດບັນທຶກລົງ localStorage ໄດ້', 'err');
+      }
+    }
+
+    function hydrate() {
+      try {
+        const raw = localStorage.getItem(STORE_KEY);
+        if (!raw) {
+          appState = seedData();
+          persist();
+          return;
+        }
+        const p = JSON.parse(raw);
+        appState = {
+          rules: {
+            cardAmount: Math.max(100, Number(p.rules?.cardAmount) || 10000),
+            cardPoints: Math.max(1, Number(p.rules?.cardPoints) || 500),
+            lotAmount: Math.max(100, Number(p.rules?.lotAmount) || 100000),
+            lotPoints: Math.max(1, Number(p.rules?.lotPoints) || 2000),
+            lotPct: Math.max(0, Number(p.rules?.lotPct ?? 2))
+          },
+          customers: Array.isArray(p.customers) ? p.customers : [],
+          transactions: Array.isArray(p.transactions) ? p.transactions : [],
+          agents: Array.isArray(p.agents) ? p.agents : [],
+          agentLogs: Array.isArray(p.agentLogs) ? p.agentLogs : []
+        };
+        appState.customers.forEach(syncCustomerTotals);
+      } catch {
+        appState = seedData();
+        persist();
+      }
+    }
+
+    // ==================== Tab Navigation ====================
+    function switchTab(tabId) {
+      activeTab = tabId;
+      document.querySelectorAll('.tab-panel').forEach((sec) => {
+        sec.classList.toggle('hidden', sec.id !== `tab-${tabId}`);
+      });
+
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        const isAct = btn.dataset.tab === tabId;
+        const isMob = btn.closest('#mobileMenu') !== null;
+        if (isMob) {
+          btn.className = isAct
+            ? 'tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-bold bg-teal-700 text-white transition cursor-pointer'
+            : 'tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer';
+        } else {
+          btn.className = isAct
+            ? 'tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm transition cursor-pointer'
+            : 'tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition cursor-pointer';
+        }
+      });
+
+      document.getElementById('mobileMenu').classList.add('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ==================== Points & Matching ====================
+    function computePoints(amount, cat) {
+      const amt = Math.max(0, Number(amount) || 0);
+      if (cat === 'LOTTERY') {
+        const unitAmt = Math.max(1, Number(appState.rules.lotAmount) || 100000);
+        const unitPts = Number(appState.rules.lotPoints) || 2000;
+        const pct = Math.max(0, Number(appState.rules.lotPct ?? 2));
+        if (amt >= unitAmt) return Math.floor(amt / unitAmt) * unitPts;
+        return Math.round((amt * pct) / 100);
+      }
+      const cAmt = Math.max(1, Number(appState.rules.cardAmount) || 10000);
+      const cPts = Number(appState.rules.cardPoints) || 500;
+      return Math.floor(amt / cAmt) * cPts;
+    }
+
+    function matchCustomer(name, phone) {
+      const nn = normStr(name);
+      const np = normTel(phone);
+
+      const matches = appState.customers.filter((c) => {
+        const sameName = Boolean(nn && normStr(c.name) === nn);
+        const samePhone = Boolean(np && normTel(c.phone) && normTel(c.phone) === np);
+        return sameName || samePhone;
+      });
+
+      if (matches.length === 0) return { customer: null, reason: null };
+
+      const primary = matches[0];
+      for (let i = 1; i < matches.length; i++) {
+        const extra = matches[i];
+        primary.pts9 += Number(extra.pts9) || 0;
+        primary.pts5 += Number(extra.pts5) || 0;
+        primary.ptsLot += Number(extra.ptsLot) || 0;
+        primary.lifetimePoints = Math.max(Number(primary.lifetimePoints) || 0, (Number(primary.points) || 0) + (Number(extra.points) || 0));
+        primary.totalSpent += Number(extra.totalSpent) || 0;
+        primary.txCount += Number(extra.txCount) || 0;
+        if (!primary.phone && extra.phone) primary.phone = extra.phone;
+        appState.transactions.forEach((tx) => {
+          if (tx.customerId === extra.id) {
+            tx.customerId = primary.id;
+            tx.customerName = primary.name;
+          }
+        });
+        appState.customers = appState.customers.filter((x) => x.id !== extra.id);
+      }
+
+      syncCustomerTotals(primary);
+
+      const mName = Boolean(nn && normStr(primary.name) === nn);
+      const mPhone = Boolean(np && normTel(primary.phone) && normTel(primary.phone) === np);
+      const reason = mName && mPhone ? 'ຊື່ດຽວກັນ ແລະ ເບີດຽວກັນ' : mPhone ? 'ເບີດຽວກັນ' : 'ຊື່ດຽວກັນ';
+      return { customer: primary, reason };
+    }
+
+    function ensureCustomer(name, phone) {
+      const cleanName = String(name || '').trim();
+      const cleanPhone = String(phone || '').trim();
+      const { customer, reason } = matchCustomer(cleanName, cleanPhone);
+      if (customer) {
+        if (cleanPhone && !customer.phone) customer.phone = cleanPhone;
+        if (cleanName && (!customer.name || customer.name.startsWith('ລູກຄ້າ '))) customer.name = cleanName;
+        return { customer, reason };
+      }
+      const created = {
+        id: makeId('cust'),
+        name: cleanName || `ລູກຄ້າ ${cleanPhone}`,
+        phone: cleanPhone,
+        pts9: 0,
+        pts5: 0,
+        ptsLot: 0,
+        points: 0,
+        lifetimePoints: 0,
+        totalSpent: 0,
+        txCount: 0,
+        updatedAt: new Date().toISOString()
+      };
+      appState.customers.push(created);
+      return { customer: created, reason: null };
+    }
+
+    function refreshBuyPreview() {
+      const name = document.getElementById('buyName').value.trim();
+      const phone = document.getElementById('buyPhone').value.trim();
+      const cat = document.querySelector('input[name="buyCat"]:checked')?.value || 'LAK9';
+      const amt = Number(document.getElementById('buyAmount').value) || 0;
+      const manual = document.getElementById('buyManualToggle').checked;
+      const ptsEl = document.getElementById('buyPoints');
+      const banner = document.getElementById('buyMatchBanner');
+
+      if (manual) {
+        ptsEl.readOnly = false;
+        ptsEl.className = 'w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-teal-600 text-base font-extrabold text-slate-900 outline-none';
+      } else {
+        ptsEl.readOnly = true;
+        ptsEl.className = 'w-full px-3.5 py-2.5 rounded-xl bg-teal-50 border border-teal-200 text-base font-extrabold text-teal-800 outline-none';
+        ptsEl.value = computePoints(amt, cat);
+      }
+
+      const incoming = Number(ptsEl.value) || 0;
+      if (name || normTel(phone)) {
+        const { customer, reason } = matchCustomer(name, phone);
+        if (customer) {
+          banner.innerHTML = `
+            <span class="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-teal-100 text-teal-800 mr-1.5">${esc(reason)}</span>
+            <strong class="text-slate-900">${esc(customer.name)}</strong>
+            · ມີຢູ່ <strong class="text-slate-900">${fmtNum(customer.points)}</strong>
+            + ບວກ <strong class="text-teal-700">+${fmtNum(incoming)}</strong>
+            = <strong class="text-teal-800">${fmtNum(customer.points + incoming)} ຄະແນນ</strong>
+          `;
+        } else {
+          banner.innerHTML = `
+            <span class="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-sky-100 text-sky-800 mr-1.5">ລູກຄ້າໃໝ່</span>
+            ຈະບັນທຶກ ແລະ ບວກ <strong class="text-teal-700">+${fmtNum(incoming)} ຄະແນນ</strong> ສະສົມໄປເລືອຍໆ
+          `;
+        }
+      } else {
+        banner.innerHTML = `ປ້ອນ <strong>ຊື່ລູກຄ້າ</strong> ຫຼື <strong>ເບີໂທ</strong> — ຖ້າກົງກັບ <strong>ຊື່ດຽວກັນ ຫຼື ເບີດຽວກັນ</strong> ລະບົບຈະບວກຄະແນນສະສົມໄປເລືອຍໆ.`;
+      }
+    }
+
+    function onBuySubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('buyName').value.trim();
+      const phone = document.getElementById('buyPhone').value.trim();
+      const cat = document.querySelector('input[name="buyCat"]:checked')?.value || 'LAK9';
+      const amt = Number(document.getElementById('buyAmount').value) || 0;
+      const pts = Number(document.getElementById('buyPoints').value) || 0;
+      const note = document.getElementById('buyNote').value.trim();
+
+      if (!name && !normTel(phone)) {
+        notify('ກະລຸນາປ້ອນຊື່ລູກຄ້າ ຫຼື ເບີໂທ', 'err');
+        return;
+      }
+
+      const { customer, reason } = ensureCustomer(name, phone);
+      addPtsToCat(customer, cat, pts);
+      customer.totalSpent += amt;
+      customer.txCount += 1;
+      customer.updatedAt = new Date().toISOString();
+
+      appState.transactions.unshift({
+        id: makeId('tx'),
+        customerId: customer.id,
+        customerName: customer.name,
+        customerPhone: customer.phone,
+        type: 'EARN',
+        category: cat,
+        amount: amt,
+        pointsDelta: pts,
+        note: note || `${catLabel(cat)} (${fmtKip(amt)})${reason ? ` · ${reason}` : ''}`,
+        createdAt: new Date().toISOString()
+      });
+
+      persist();
+      renderView();
+      document.getElementById('buyNote').value = '';
+      notify(`ບວກ +${fmtNum(pts)} ໃຫ້ "${customer.name}" · ລວມ ${fmtNum(customer.points)} ຄະແນນ`, 'ok');
+    }
+
+    // ==================== Adjust & History Modals ====================
+    function openAdjust(custId, cat = 'TOTAL', mode = 'DEDUCT') {
+      const c = appState.customers.find((x) => x.id === custId);
+      if (!c) return;
+      document.getElementById('adjustCustomerId').value = c.id;
+      document.getElementById('adjustModalTitle').textContent = `ປັບຄະແນນ: ${c.name}`;
+      document.getElementById('adjustCustomerInfo').innerHTML = `
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span>ລວມ: <strong class="text-slate-900">${fmtNum(c.points)}</strong></span>
+          <span>ຫຼັກ 9: <strong>${fmtNum(c.pts9)}</strong> · ຫຼັກ 5: <strong>${fmtNum(c.pts5)}</strong> · ຊື້ເລກ: <strong>${fmtNum(c.ptsLot)}</strong></span>
+        </div>
+      `;
+      document.getElementById('adjustCategory').value = cat;
+      document.getElementById('adjustMode').value = mode;
+      document.getElementById('adjustAmount').value = '';
+      document.getElementById('adjustNote').value = '';
+      refreshAdjustPreview();
+
+      const dlg = document.getElementById('adjustModal');
+      dlg.classList.remove('hidden');
+      dlg.classList.add('flex');
+      document.getElementById('adjustAmount').focus();
+    }
+
+    function hideAdjust() {
+      const dlg = document.getElementById('adjustModal');
+      dlg.classList.add('hidden');
+      dlg.classList.remove('flex');
+    }
+
+    function refreshAdjustPreview() {
+      const cid = document.getElementById('adjustCustomerId').value;
+      const cat = document.getElementById('adjustCategory').value;
+      const mode = document.getElementById('adjustMode').value;
+      const val = Math.max(0, Math.floor(Number(document.getElementById('adjustAmount').value) || 0));
+      const c = appState.customers.find((x) => x.id === cid);
+      const out = document.getElementById('adjustResultPreview');
+      if (!c) return;
+
+      const cur = cat === 'LAK5' ? c.pts5 : cat === 'LOTTERY' ? c.ptsLot : cat === 'LAK9' ? c.pts9 : c.points;
+      const next = mode === 'DEDUCT' ? Math.max(0, cur - val) : mode === 'ADD' ? cur + val : val;
+      out.textContent = `ປັດຈຸບັນ: ${fmtNum(cur)} → ໃໝ່: ${fmtNum(next)}`;
+    }
+
+    function onAdjustSubmit(e) {
+      e.preventDefault();
+      const cid = document.getElementById('adjustCustomerId').value;
+      const cat = document.getElementById('adjustCategory').value;
+      const mode = document.getElementById('adjustMode').value;
+      const val = Math.max(0, Math.floor(Number(document.getElementById('adjustAmount').value) || 0));
+      const note = document.getElementById('adjustNote').value.trim();
+
+      const c = appState.customers.find((x) => x.id === cid);
+      if (!c) return;
+      const before = c.points;
+
+      if (cat === 'TOTAL') {
+        if (mode === 'DEDUCT') {
+          let rem = Math.min(c.points, val);
+          const d9 = Math.min(c.pts9, rem); c.pts9 -= d9; rem -= d9;
+          const d5 = Math.min(c.pts5, rem); c.pts5 -= d5; rem -= d5;
+          const dl = Math.min(c.ptsLot, rem); c.ptsLot -= dl;
+          syncCustomerTotals(c);
+        } else if (mode === 'ADD') {
+          addPtsToCat(c, 'LAK9', val);
+        } else {
+          const diff = val - c.points;
+          if (diff >= 0) addPtsToCat(c, 'LAK9', diff);
+          else {
+            let rem = Math.abs(diff);
+            const d9 = Math.min(c.pts9, rem); c.pts9 -= d9; rem -= d9;
+            const d5 = Math.min(c.pts5, rem); c.pts5 -= d5; rem -= d5;
+            const dl = Math.min(c.ptsLot, rem); c.ptsLot -= dl;
+            syncCustomerTotals(c);
+          }
+        }
+      } else {
+        const cur = cat === 'LAK5' ? c.pts5 : cat === 'LOTTERY' ? c.ptsLot : c.pts9;
+        const next = mode === 'DEDUCT' ? Math.max(0, cur - val) : mode === 'ADD' ? cur + val : val;
+        const diff = next - cur;
+        if (cat === 'LAK5') c.pts5 = next;
+        else if (cat === 'LOTTERY') c.ptsLot = next;
+        else c.pts9 = next;
+        if (diff > 0) c.lifetimePoints = (Number(c.lifetimePoints) || 0) + diff;
+        syncCustomerTotals(c);
+      }
+
+      c.updatedAt = new Date().toISOString();
+      const delta = c.points - before;
+
+      appState.transactions.unshift({
+        id: makeId('tx'),
+        customerId: c.id,
+        customerName: c.name,
+        customerPhone: c.phone,
+        type: 'ADJUST',
+        category: cat === 'TOTAL' ? 'GENERAL' : cat,
+        amount: 0,
+        pointsDelta: delta,
+        note: note || `${mode === 'DEDUCT' ? 'ທ້ອນ/ຫັກ' : mode === 'ADD' ? 'ເພີ່ມ' : 'ປັບ'}ຄະແນນ (${delta >= 0 ? '+' : ''}${fmtNum(delta)})`,
+        createdAt: new Date().toISOString()
+      });
+
+      persist();
+      renderView();
+      hideAdjust();
+      notify(`ປັບຄະແນນ "${c.name}" ສຳເລັດ · ຄົງເຫຼືອ ${fmtNum(c.points)}`, 'ok');
+    }
+
+    function openHistory(custId) {
+      const c = appState.customers.find((x) => x.id === custId);
+      if (!c) return;
+      document.getElementById('historyTitle').textContent = `ປະຫວັດ: ${c.name}`;
+      document.getElementById('historySubtitle').textContent = `ຄົງເຫຼືອ ${fmtNum(c.points)} · ສະສົມ ${fmtNum(c.lifetimePoints)} · ຍອດຊື້ ${fmtKip(c.totalSpent)}`;
+
+      const items = appState.transactions.filter((t) => t.customerId === c.id);
+      const body = document.getElementById('historyBody');
+      body.innerHTML = items.length === 0
+        ? `<div class="py-8 text-center text-sm text-slate-400">ຍັງບໍ່ມີປະຫວັດ</div>`
+        : items.map((t) => {
+            const pos = Number(t.pointsDelta) >= 0;
+            return `
+              <div class="p-3.5 rounded-xl surface-muted flex items-start justify-between gap-3 tabular-nums">
+                <div>
+                  <div class="text-xs text-slate-500">${fmtDate(t.createdAt)}</div>
+                  <div class="text-sm font-semibold text-slate-800 mt-0.5">${esc(t.note)}</div>
+                </div>
+                <span class="text-sm font-extrabold shrink-0 ${pos ? 'text-teal-700' : 'text-rose-600'}">
+                  ${pos ? '+' : ''}${fmtNum(t.pointsDelta)}
+                </span>
+              </div>
+            `;
+          }).join('');
+
+      const dlg = document.getElementById('historyModal');
+      dlg.classList.remove('hidden');
+      dlg.classList.add('flex');
+    }
+
+    function hideHistory() {
+      const dlg = document.getElementById('historyModal');
+      dlg.classList.add('hidden');
+      dlg.classList.remove('flex');
+    }
+
+    // ==================== Agents ====================
+    function syncAgForm() {
+      const t = document.getElementById('agType').value;
+      document.getElementById('agPctField').classList.toggle('hidden', t !== 'ORDER_PCT');
+    }
+
+    function onAgCreate(e) {
+      e.preventDefault();
+      const name = document.getElementById('agName').value.trim();
+      const phone = document.getElementById('agPhone').value.trim();
+      const type = document.getElementById('agType').value;
+      const pctRate = type === 'ORDER_PCT' ? Math.max(0, Math.min(100, Number(document.getElementById('agPct').value) || 0)) : 0;
+
+      if (!name) {
+        notify('ກະລຸນາປ້ອນຊື່ໂຕແທນ', 'err');
+        return;
+      }
+
+      appState.agents.push({
+        id: makeId('ag'),
+        name,
+        phone,
+        type,
+        pctRate,
+        stockTaken: 0,
+        cashPaid: 0,
+        orderTotal: 0,
+        commissionEarned: 0,
+        commissionPaid: 0,
+        createdAt: new Date().toISOString()
+      });
+
+      persist();
+      renderView();
+      document.getElementById('agName').value = '';
+      document.getElementById('agPhone').value = '';
+      notify(`ເພີ່ມໂຕແທນ "${name}" ແລ້ວ`, 'ok');
+    }
+
+    function syncAgTxForm() {
+      const id = document.getElementById('txAgentSelect').value;
+      const act = document.getElementById('txAgentAction');
+      const pctBox = document.getElementById('txOrderPctBox');
+      const commBox = document.getElementById('txCommPreviewBox');
+      const pctInp = document.getElementById('txOrderPct');
+      const prevAct = act.value;
+      const ag = appState.agents.find((x) => x.id === id);
+
+      act.innerHTML = '';
+      if (!ag) {
+        act.innerHTML = '<option value="TAKE">ເອົາໄປຂາຍ</option>';
+        pctBox.classList.add('hidden');
+        commBox.classList.add('hidden');
+        return;
+      }
+
+      if (ag.type === 'CASH_SELL') {
+        act.innerHTML = '<option value="TAKE">ເອົາໄປຂາຍ</option><option value="PAY">ຈ່າຍເງິນຄືນ</option>';
+        if (prevAct === 'TAKE' || prevAct === 'PAY') act.value = prevAct;
+        pctBox.classList.add('hidden');
+        commBox.classList.add('hidden');
+      } else {
+        act.innerHTML = '<option value="ORDER">ຮັບອໍເດີ (ຄິດ %)</option><option value="PAY_COMM">ຈ່າຍຄ່າ %</option>';
+        if (prevAct === 'ORDER' || prevAct === 'PAY_COMM') act.value = prevAct;
+        const isOrd = act.value === 'ORDER';
+        pctBox.classList.toggle('hidden', !isOrd);
+        commBox.classList.toggle('hidden', !isOrd);
+        if (isOrd && !pctInp.dataset.touched) pctInp.value = ag.pctRate ?? 10;
+      }
+      refreshAgCommPreview();
+    }
+
+    function refreshAgCommPreview() {
+      const amt = Number(document.getElementById('txAgentAmt').value) || 0;
+      const pct = Number(document.getElementById('txOrderPct').value) || 0;
+      document.getElementById('txCommPreview').textContent = `${fmtKip(Math.round((amt * pct) / 100))} (${pct}%)`;
+    }
+
+    function onAgTxSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('txAgentSelect').value;
+      const act = document.getElementById('txAgentAction').value;
+      const amt = Number(document.getElementById('txAgentAmt').value) || 0;
+      const pct = Math.max(0, Math.min(100, Number(document.getElementById('txOrderPct').value) || 0));
+      const note = document.getElementById('txAgentNote').value.trim();
+      const ag = appState.agents.find((x) => x.id === id);
+      if (!ag || amt <= 0) return;
+
+      let comm = 0;
+      if (ag.type === 'CASH_SELL') {
+        if (act === 'TAKE') ag.stockTaken += amt;
+        else ag.cashPaid += amt;
+      } else {
+        if (act === 'ORDER') {
+          comm = Math.round((amt * pct) / 100);
+          ag.orderTotal += amt;
+          ag.commissionEarned += comm;
+        } else {
+          ag.commissionPaid += amt;
+          comm = amt;
+        }
+      }
+
+      appState.agentLogs.unshift({
+        id: makeId('al'),
+        agentId: ag.id,
+        agentName: ag.name,
+        type: ag.type,
+        action: act,
+        amount: amt,
+        pctRate: pct,
+        commission: comm,
+        note: note || '-',
+        createdAt: new Date().toISOString()
+      });
+
+      persist();
+      renderView();
+      document.getElementById('txAgentNote').value = '';
+      document.getElementById('txOrderPct').dataset.touched = '';
+      notify('ບັນທຶກລາຍການໂຕແທນສຳເລັດ', 'ok');
+    }
+
+    function setAgentPct(id, val) {
+      const pct = Number(val);
+      if (Number.isNaN(pct) || pct < 0 || pct > 100) {
+        notify('ປ້ອນ % ລະຫວ່າງ 0 - 100', 'err');
+        return;
+      }
+      const ag = appState.agents.find((x) => x.id === id);
+      if (!ag) return;
+      ag.pctRate = pct;
+      persist();
+      renderView();
+      notify(`ປັບ % ຂອງ "${ag.name}" ເປັນ ${pct}% ແລ້ວ`, 'ok');
+    }
+
+    function jumpAgentTx(id, act) {
+      switchTab('agents');
+      const sel = document.getElementById('txAgentSelect');
+      sel.value = id;
+      syncAgTxForm();
+      const actSel = document.getElementById('txAgentAction');
+      if ([...actSel.options].some((o) => o.value === act)) {
+        actSel.value = act;
+        syncAgTxForm();
+      }
+      document.getElementById('txAgentAmt').focus();
+    }
+
+    function delAgent(id) {
+      const ag = appState.agents.find((x) => x.id === id);
+      if (!ag) return;
+      askConfirm('ລຶບໂຕແທນ?', `ຕ້ອງການລຶບ "${ag.name}" ບໍ່?`, () => {
+        appState.agents = appState.agents.filter((x) => x.id !== id);
+        persist();
+        renderView();
+        notify('ລຶບໂຕແທນແລ້ວ', 'info');
+      });
+    }
+
+    // ==================== Render ====================
+    function renderView() {
+      const badge = `ບັດ: ${fmtNum(appState.rules.cardAmount)}=${fmtNum(appState.rules.cardPoints)} · ເລກ: ${fmtNum(appState.rules.lotAmount)}=${fmtNum(appState.rules.lotPoints)} (${appState.rules.lotPct}%)`;
+      document.getElementById('headerRuleBadge').textContent = badge;
+      document.getElementById('cfgCardAmt').value = appState.rules.cardAmount;
+      document.getElementById('cfgCardPts').value = appState.rules.cardPoints;
+      document.getElementById('cfgLotAmt').value = appState.rules.lotAmount;
+      document.getElementById('cfgLotPts').value = appState.rules.lotPoints;
+      document.getElementById('cfgLotPct').value = appState.rules.lotPct;
+
+      const activePts = appState.customers.reduce((s, c) => s + (Number(c.points) || 0), 0);
+      const lifePts = appState.customers.reduce((s, c) => s + (Number(c.lifetimePoints) || 0), 0);
+      const totalSpent = appState.customers.reduce((s, c) => s + (Number(c.totalSpent) || 0), 0);
+      const cashDue = appState.agents.filter((a) => a.type === 'CASH_SELL').reduce((s, a) => s + Math.max(0, (a.stockTaken || 0) - (a.cashPaid || 0)), 0);
+      const commDue = appState.agents.filter((a) => a.type === 'ORDER_PCT').reduce((s, a) => s + Math.max(0, (a.commissionEarned || 0) - (a.commissionPaid || 0)), 0);
+
+      document.getElementById('statCustomers').textContent = `${fmtNum(appState.customers.length)} ຄົນ`;
+      document.getElementById('statSalesTotal').textContent = `ຍອດຊື້ ${fmtKip(totalSpent)}`;
+      document.getElementById('statActivePoints').textContent = fmtNum(activePts);
+      document.getElementById('statLifetimePoints').textContent = `ສະສົມທັງໝົດ ${fmtNum(lifePts)}`;
+      document.getElementById('statTxCount').textContent = fmtNum(appState.transactions.length);
+      document.getElementById('statAgentsCount').textContent = `${fmtNum(appState.agents.length)} ໂຕແທນ`;
+      document.getElementById('statAgentsDue').textContent = `ຄ້າງ ${fmtNum(cashDue)} · ຄ່າ% ຄ້າງ ${fmtNum(commDue)}`;
+
+      const p9 = appState.customers.reduce((s, c) => s + (Number(c.pts9) || 0), 0);
+      const p5 = appState.customers.reduce((s, c) => s + (Number(c.pts5) || 0), 0);
+      const pLot = appState.customers.reduce((s, c) => s + (Number(c.ptsLot) || 0), 0);
+      const s9 = appState.transactions.filter((t) => t.type === 'EARN' && t.category === 'LAK9').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+      const s5 = appState.transactions.filter((t) => t.type === 'EARN' && t.category === 'LAK5').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+      const sLot = appState.transactions.filter((t) => t.type === 'EARN' && t.category === 'LOTTERY').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+
+      document.getElementById('ovPts9').textContent = fmtNum(p9);
+      document.getElementById('ovPts5').textContent = fmtNum(p5);
+      document.getElementById('ovPtsLot').textContent = fmtNum(pLot);
+      document.getElementById('ovSales9').textContent = `ຍອດຊື້ ${fmtKip(s9)}`;
+      document.getElementById('ovSales5').textContent = `ຍອດຊື້ ${fmtKip(s5)}`;
+      document.getElementById('ovSalesLot').textContent = `ຍອດຊື້ ${fmtKip(sLot)}`;
+
+      const recent = appState.transactions.slice(0, 6);
+      document.getElementById('ovRecentList').innerHTML = recent.length === 0
+        ? `<div class="py-8 text-center text-sm text-slate-400">ຍັງບໍ່ມີລາຍການ</div>`
+        : recent.map((t) => {
+            const pos = Number(t.pointsDelta) >= 0;
+            return `
+              <div class="p-3.5 rounded-xl surface-muted flex items-center justify-between gap-3 tabular-nums">
+                <div>
+                  <div class="text-sm font-bold text-slate-900">${esc(t.customerName)} <span class="text-xs font-normal text-slate-500">· ${fmtDate(t.createdAt)}</span></div>
+                  <div class="text-xs text-slate-600 mt-0.5">${esc(t.note)}</div>
+                </div>
+                <span class="text-sm font-extrabold shrink-0 ${pos ? 'text-teal-700' : 'text-rose-600'}">${pos ? '+' : ''}${fmtNum(t.pointsDelta)}</span>
+              </div>
+            `;
+          }).join('');
+
+      document.getElementById('dlNames').innerHTML = appState.customers.map((c) => `<option value="${esc(c.name)}"></option>`).join('');
+      const phones = [...new Set(appState.customers.map((c) => (c.phone || '').trim()).filter(Boolean))];
+      document.getElementById('dlPhones').innerHTML = phones.map((p) => `<option value="${esc(p)}"></option>`).join('');
+
+      const q = (document.getElementById('custSearch').value || '').trim().toLowerCase();
+      const qTel = normTel(q);
+      const filt = document.getElementById('custFilter').value;
+      const custList = appState.customers
+        .filter((c) => {
+          const okQ = !q || (c.name || '').toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q) || (qTel && normTel(c.phone).includes(qTel));
+          if (!okQ) return false;
+          if (filt === 'LAK9') return (c.pts9 || 0) > 0;
+          if (filt === 'LAK5') return (c.pts5 || 0) > 0;
+          if (filt === 'LOTTERY') return (c.ptsLot || 0) > 0;
+          return true;
+        })
+        .sort((a, b) => (b.points || 0) - (a.points || 0));
+
+      document.getElementById('customerCards').innerHTML = custList.length === 0
+        ? `<div class="col-span-full py-10 text-center text-sm text-slate-400">ບໍ່ພົບລູກຄ້າ</div>`
+        : custList.map((c) => `
+            <div class="surface-muted rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-4">
+              <div class="space-y-3">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <div class="text-base font-extrabold text-slate-900">${esc(c.name)}</div>
+                    <div class="text-xs text-slate-500">${esc(c.phone || 'ບໍ່ມີເບີໂທ')} · ຊື້ ${fmtNum(c.txCount)} ຄັ້ງ</div>
+                  </div>
+                  <div class="text-right">
+                    <span class="block text-[10px] font-bold text-slate-500">ລວມຄະແນນ</span>
+                    <span class="text-xl font-extrabold text-teal-800">${fmtNum(c.points)}</span>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 text-center bg-white p-2.5 rounded-xl border border-slate-200">
+                  <div>
+                    <span class="block text-[10px] font-bold text-teal-700">ຫຼັກ 9</span>
+                    <span class="text-xs sm:text-sm font-extrabold text-slate-900">${fmtNum(c.pts9)}</span>
+                  </div>
+                  <div>
+                    <span class="block text-[10px] font-bold text-sky-700">ຫຼັກ 5</span>
+                    <span class="text-xs sm:text-sm font-extrabold text-slate-900">${fmtNum(c.pts5)}</span>
+                  </div>
+                  <div>
+                    <span class="block text-[10px] font-bold text-amber-700">ຊື້ເລກ</span>
+                    <span class="text-xs sm:text-sm font-extrabold text-slate-900">${fmtNum(c.ptsLot)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2">
+                <button onclick="openAdjust('${c.id}', 'TOTAL', 'DEDUCT')" class="py-2 px-2 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 transition cursor-pointer">ທ້ອນ/ຫັກ</button>
+                <button onclick="openAdjust('${c.id}', 'TOTAL', 'SET')" class="py-2 px-2 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 transition cursor-pointer">ປັບຄະແນນ</button>
+                <button onclick="openHistory('${c.id}')" class="py-2 px-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer">ປະຫວັດ</button>
+              </div>
+            </div>
+          `).join('');
+
+      const agSel = document.getElementById('txAgentSelect');
+      const prevAg = agSel.value;
+      agSel.innerHTML = appState.agents.length === 0
+        ? '<option value="">-- ຍັງບໍ່ມີໂຕແທນ --</option>'
+        : appState.agents.map((a) => `<option value="${a.id}">${esc(a.name)} (${a.type === 'CASH_SELL' ? 'ຂາຍລະຈ່າຍເງິນ' : `ຮັບອໍເດີ ${a.pctRate}%`})</option>`).join('');
+      if (prevAg && appState.agents.some((a) => a.id === prevAg)) agSel.value = prevAg;
+      syncAgTxForm();
+
+      document.querySelectorAll('.agfilter-btn').forEach((btn) => {
+        btn.className = btn.dataset.agfilter === selectedAgFilter
+          ? 'agfilter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white cursor-pointer'
+          : 'agfilter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer';
+      });
+
+      const visAgents = appState.agents.filter((a) => selectedAgFilter === 'ALL' || a.type === selectedAgFilter);
+      document.getElementById('agentCards').innerHTML = visAgents.length === 0
+        ? `<div class="col-span-full py-8 text-center text-sm text-slate-400">ຍັງບໍ່ມີໂຕແທນ</div>`
+        : visAgents.map((a) => {
+            if (a.type === 'CASH_SELL') {
+              const due = Math.max(0, (a.stockTaken || 0) - (a.cashPaid || 0));
+              return `
+                <div class="surface-muted rounded-2xl p-4 sm:p-5 space-y-3.5">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-800 mb-1">ແບບ 1: ເອົາໄປຂາຍລະຈ່າຍເງິນ</span>
+                      <div class="text-base font-extrabold text-slate-900">${esc(a.name)}</div>
+                      <div class="text-xs text-slate-500">${esc(a.phone || 'ບໍ່ມີເບີ')}</div>
+                    </div>
+                    <button onclick="delAgent('${a.id}')" class="text-xs font-bold text-slate-400 hover:text-rose-600 cursor-pointer">ລຶບ</button>
+                  </div>
+                  <div class="grid grid-cols-3 gap-2 text-center bg-white p-2.5 rounded-xl border border-slate-200">
+                    <div><span class="block text-[10px] text-slate-500">ເອົາໄປຂາຍ</span><span class="text-xs sm:text-sm font-bold text-slate-900">${fmtNum(a.stockTaken)}</span></div>
+                    <div><span class="block text-[10px] text-slate-500">ຈ່າຍແລ້ວ</span><span class="text-xs sm:text-sm font-bold text-teal-700">${fmtNum(a.cashPaid)}</span></div>
+                    <div><span class="block text-[10px] text-slate-500">ຄ້າງຈ່າຍ</span><span class="text-xs sm:text-sm font-extrabold text-rose-600">${fmtNum(due)}</span></div>
+                  </div>
+                  <div class="flex gap-2">
+                    <button onclick="jumpAgentTx('${a.id}', 'TAKE')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 cursor-pointer">+ ເອົາໄປຂາຍ</button>
+                    <button onclick="jumpAgentTx('${a.id}', 'PAY')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white cursor-pointer">ຈ່າຍເງິນຄືນ</button>
+                  </div>
+                </div>
+              `;
+            }
+            const cDue = Math.max(0, (a.commissionEarned || 0) - (a.commissionPaid || 0));
+            return `
+              <div class="surface-muted rounded-2xl p-4 sm:p-5 space-y-3.5">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800 mb-1">ແບບ 2: ຮັບອໍເດີລະເອົາ %</span>
+                    <div class="text-base font-extrabold text-slate-900">${esc(a.name)}</div>
+                    <div class="text-xs text-slate-500">${esc(a.phone || 'ບໍ່ມີເບີ')}</div>
+                  </div>
+                  <button onclick="delAgent('${a.id}')" class="text-xs font-bold text-slate-400 hover:text-rose-600 cursor-pointer">ລຶບ</button>
+                </div>
+                <div class="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200">
+                  <span class="text-xs font-bold text-teal-800">ອັດຕາ % (ປັບໄດ້):</span>
+                  <div class="flex items-center gap-1">
+                    <input type="number" min="0" max="100" step="0.5" value="${a.pctRate ?? 10}" onchange="setAgentPct('${a.id}', this.value)"
+                      class="w-16 px-2 py-1 rounded-lg bg-teal-50 border border-teal-200 text-xs font-extrabold text-teal-900 text-right outline-none" />
+                    <span class="text-xs font-bold text-slate-500">%</span>
+                  </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center bg-white p-2.5 rounded-xl border border-slate-200">
+                  <div><span class="block text-[10px] text-slate-500">ຍອດອໍເດີ</span><span class="text-xs sm:text-sm font-bold text-slate-900">${fmtNum(a.orderTotal)}</span></div>
+                  <div><span class="block text-[10px] text-slate-500">ຄ່າ % ໄດ້</span><span class="text-xs sm:text-sm font-bold text-teal-700">${fmtNum(a.commissionEarned)}</span></div>
+                  <div><span class="block text-[10px] text-slate-500">ຄ້າງຈ່າຍ %</span><span class="text-xs sm:text-sm font-extrabold text-amber-700">${fmtNum(cDue)}</span></div>
+                </div>
+                <div class="flex gap-2">
+                  <button onclick="jumpAgentTx('${a.id}', 'ORDER')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white cursor-pointer">+ ຮັບອໍເດີ</button>
+                  <button onclick="jumpAgentTx('${a.id}', 'PAY_COMM')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 cursor-pointer">ຈ່າຍຄ່າ %</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+      refreshBuyPreview();
+    }
+
+    // ==================== Event Listeners ====================
+    function initEvents() {
+      document.querySelectorAll('.tab-btn').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+      document.getElementById('mobileMenuBtn').addEventListener('click', () => document.getElementById('mobileMenu').classList.toggle('hidden'));
+
+      document.getElementById('confirmCancel').addEventListener('click', hideConfirm);
+      document.getElementById('confirmOk').addEventListener('click', () => {
+        const fn = confirmAction;
+        hideConfirm();
+        if (typeof fn === 'function') fn();
+      });
+
+      document.getElementById('closeAdjustModal').addEventListener('click', hideAdjust);
+      document.getElementById('cancelAdjustModal').addEventListener('click', hideAdjust);
+      ['adjustCategory', 'adjustMode', 'adjustAmount'].forEach((id) => {
+        document.getElementById(id).addEventListener('input', refreshAdjustPreview);
+        document.getElementById(id).addEventListener('change', refreshAdjustPreview);
+      });
+      document.getElementById('adjustForm').addEventListener('submit', onAdjustSubmit);
+
+      document.getElementById('closeHistoryModal').addEventListener('click', hideHistory);
+
+      ['buyName', 'buyPhone', 'buyAmount', 'buyPoints', 'buyManualToggle'].forEach((id) => {
+        document.getElementById(id).addEventListener('input', refreshBuyPreview);
+        document.getElementById(id).addEventListener('change', refreshBuyPreview);
+      });
+      document.querySelectorAll('input[name="buyCat"]').forEach((r) => r.addEventListener('change', refreshBuyPreview));
+      document.getElementById('buyForm').addEventListener('submit', onBuySubmit);
+
+      document.getElementById('custSearch').addEventListener('input', renderView);
+      document.getElementById('custFilter').addEventListener('change', renderView);
+
+      document.getElementById('agType').addEventListener('change', syncAgForm);
+      document.getElementById('agentCreateForm').addEventListener('submit', onAgCreate);
+      document.getElementById('txAgentSelect').addEventListener('change', () => {
+        document.getElementById('txOrderPct').dataset.touched = '';
+        syncAgTxForm();
+      });
+      document.getElementById('txAgentAction').addEventListener('change', syncAgTxForm);
+      document.getElementById('txAgentAmt').addEventListener('input', refreshAgCommPreview);
+      document.getElementById('txOrderPct').addEventListener('input', (e) => {
+        e.target.dataset.touched = '1';
+        refreshAgCommPreview();
+      });
+      document.getElementById('agentTxForm').addEventListener('submit', onAgTxSubmit);
+      document.querySelectorAll('.agfilter-btn').forEach((b) => {
+        b.addEventListener('click', () => {
+          selectedAgFilter = b.dataset.agfilter;
+          renderView();
+        });
+      });
+
+      document.getElementById('configRuleForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        appState.rules.cardAmount = Math.max(100, Number(document.getElementById('cfgCardAmt').value) || 10000);
+        appState.rules.cardPoints = Math.max(1, Number(document.getElementById('cfgCardPts').value) || 500);
+        appState.rules.lotAmount = Math.max(100, Number(document.getElementById('cfgLotAmt').value) || 100000);
+        appState.rules.lotPoints = Math.max(1, Number(document.getElementById('cfgLotPts').value) || 2000);
+        appState.rules.lotPct = Math.max(0, Math.min(100, Number(document.getElementById('cfgLotPct').value) || 0));
+        persist();
+        renderView();
+        notify('ບັນທຶກເກນຄະແນນແລ້ວ', 'ok');
+      });
+
+      document.getElementById('exportJsonBtn').addEventListener('click', () => {
+        const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `backoffice-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        notify('ດາວໂຫຼດໄຟລ໌ສຳຮອງແລ້ວ', 'ok');
+      });
+
+      document.getElementById('importJsonInput').addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const fr = new FileReader();
+        fr.onload = (ev) => {
+          try {
+            const p = JSON.parse(ev.target.result);
+            if (!p || typeof p !== 'object') throw new Error('bad');
+            appState = {
+              rules: {
+                cardAmount: Math.max(100, Number(p.rules?.cardAmount) || 10000),
+                cardPoints: Math.max(1, Number(p.rules?.cardPoints) || 500),
+                lotAmount: Math.max(100, Number(p.rules?.lotAmount) || 100000),
+                lotPoints: Math.max(1, Number(p.rules?.lotPoints) || 2000),
+                lotPct: Math.max(0, Number(p.rules?.lotPct ?? 2))
+              },
+              customers: Array.isArray(p.customers) ? p.customers : [],
+              transactions: Array.isArray(p.transactions) ? p.transactions : [],
+              agents: Array.isArray(p.agents) ? p.agents : [],
+              agentLogs: Array.isArray(p.agentLogs) ? p.agentLogs : []
+            };
+            appState.customers.forEach(syncCustomerTotals);
+            persist();
+            renderView();
+            notify('ນຳເຂົ້າຂໍ້ມູນສຳເລັດ', 'ok');
+          } catch {
+            notify('ໄຟລ໌ JSON ບໍ່ຖືກຕ້ອງ', 'err');
+          }
+          e.target.value = '';
+        };
+        fr.readAsText(file);
+      });
+
+      const loadSample = () => {
+        askConfirm('ໂຫຼດຂໍ້ມູນຕົວຢ່າງ?', 'ຂໍ້ມູນປັດຈຸບັນຈະຖືກແທນທີ່ດ້ວຍຂໍ້ມູນຕົວຢ່າງ.', () => {
+          appState = seedData();
+          persist();
+          renderView();
+          notify('ໂຫຼດຂໍ້ມູນຕົວຢ່າງແລ້ວ', 'ok');
+        });
+      };
+
+      document.getElementById('demoLoadTopBtn').addEventListener('click', loadSample);
+      document.getElementById('resetDemoBtn').addEventListener('click', loadSample);
+
+      document.getElementById('wipeAllBtn').addEventListener('click', () => {
+        askConfirm('ລຶບຂໍ້ມູນທັງໝົດ?', 'ລູກຄ້າ, ປະຫວັດ ແລະ ໂຕແທນທັງໝົດຈະຖືກລຶບ.', () => {
+          appState.customers = [];
+          appState.transactions = [];
+          appState.agents = [];
+          appState.agentLogs = [];
+          persist();
+          renderView();
+          notify('ລຶບຂໍ້ມູນທັງໝົດແລ້ວ', 'info');
+        });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      hydrate();
+      initEvents();
+      renderView();
+      switchTab('overview');
+    });
+  </script>
+</body>
+</html>
